@@ -67,7 +67,7 @@ parser.add_argument('--dataset', metavar='NAME', default='',
                     help='dataset type + name ("<type>/<name>") (default: ImageFolder or ImageTar if empty)')
 parser.add_argument('--split', metavar='NAME', default='validation',
                     help='dataset split (default: validation)')
-parser.add_argument('--model', '-m', metavar='MODEL', default='maxvit_rmlp_base_rw_384',
+parser.add_argument('--model', '-m', metavar='MODEL', default='coatnet_nano_rw_224',
                     help='model architecture (default: resnet50)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 2)')
@@ -97,7 +97,7 @@ parser.add_argument('--class-map', default='', type=str, metavar='FILENAME',
                     help='path to class to idx mapping file (default: "")')
 parser.add_argument('--log-freq', default=10, type=int,
                     metavar='N', help='batch logging frequency (default: 10)')
-parser.add_argument('--checkpoint', type=str, metavar='PATH', default='weights/pytorch_model.bin',
+parser.add_argument('--checkpoint', type=str, metavar='PATH', default='weights/coatnet.bin',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                     help='use pre-trained model')
@@ -197,7 +197,7 @@ def main():
         **args.model_kwargs,
     )
 
-    ort_session = ort.InferenceSession('maxvit_rmlp_base_rw_384.onnx', providers=['CUDAExecutionProvider'])
+    ort_session = ort.InferenceSession('coatnet_nano_rw_224.onnx', providers=['CUDAExecutionProvider'])
     
     if args.num_classes is None:
         assert hasattr(model, 'num_classes'), 'Model must have `num_classes` attr if not set on cmd line/config.'
@@ -275,10 +275,12 @@ def main():
         for batch_idx, (input, _) in enumerate(loader):
 
             with amp_autocast():
-                output = model(input)
+                output_ = model(input)
             ort_img_cpu = input.cpu()
             ort_img_np = np.around(ort_img_cpu.numpy(), 4)
-            outputs = ort_session.run(None, {'img': ort_img_np})
+            output = ort_session.run(None, {'img': ort_img_np})[0]
+            output = torch.from_numpy(output)
+            output = output.to('cuda')
             if use_probs:
                 output = output.softmax(-1)
 

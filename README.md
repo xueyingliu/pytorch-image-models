@@ -2,7 +2,15 @@
 segformer_pt1.11
 
 # onnx export 
-python onnx_export.py
+## maxvit
+python onnx_export_maxvit.py
+
+## coatnet
+python onnx_export_coatnet.py
 
 # onnx inference 
-python inference_onnx.py
+## maxvit
+python inference_onnx_maxvit.py
+
+## coatnet
+python inference_onnx_coatnet.py

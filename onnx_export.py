@@ -25,11 +25,11 @@ from timm.utils.model import reparameterize_model
 from timm.utils.onnx import onnx_export
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Validation')
-parser.add_argument('output', metavar='ONNX_FILE',
+parser.add_argument('--output', metavar='ONNX_FILE',default='maxvit_rmlp_base_rw_384.onnx',
                     help='output model filename')
-parser.add_argument('--model', '-m', metavar='MODEL', default='mobilenetv3_large_100',
+parser.add_argument('--model', '-m', metavar='MODEL', default='maxvit_rmlp_base_rw_384',
                     help='model architecture (default: mobilenetv3_large_100)')
-parser.add_argument('--opset', type=int, default=None,
+parser.add_argument('--opset', type=int, default=12,
                     help='ONNX opset to use (default: 10)')
 parser.add_argument('--keep-init', action='store_true', default=False,
                     help='Keep initializers as input. Needed for Caffe2 compatible export in newer PyTorch/ONNX.')
@@ -41,7 +41,7 @@ parser.add_argument('--check-forward', action='store_true', default=False,
                     help='Do a full check of torch vs onnx forward after export.')
 parser.add_argument('-b', '--batch-size', default=1, type=int,
                     metavar='N', help='mini-batch size (default: 1)')
-parser.add_argument('--img-size', default=None, type=int,
+parser.add_argument('--img-size', default=384, type=int,
                     metavar='N', help='Input image dimension, uses model default if empty')
 parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
                     help='Override mean pixel value of dataset')
@@ -49,7 +49,7 @@ parser.add_argument('--std', type=float,  nargs='+', default=None, metavar='STD'
                     help='Override std deviation of of dataset')
 parser.add_argument('--num-classes', type=int, default=1000,
                     help='Number classes in dataset')
-parser.add_argument('--checkpoint', default='', type=str, metavar='PATH',
+parser.add_argument('--checkpoint', default='weights/pytorch_model.bin', type=str, metavar='PATH',
                     help='path to checkpoint (default: none)')
 parser.add_argument('--reparam', default=False, action='store_true',
                     help='Reparameterize model')
@@ -90,6 +90,7 @@ def main():
         check_forward=args.check_forward,
         training=args.training,
         verbose=args.verbose,
+        input_names=['img'],
         input_size=(3, args.img_size, args.img_size),
         batch_size=args.batch_size,
     )

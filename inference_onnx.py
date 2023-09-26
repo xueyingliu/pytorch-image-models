@@ -21,6 +21,8 @@ from timm.data import create_dataset, create_loader, resolve_data_config, ImageN
 from timm.layers import apply_test_time_pool
 from timm.models import create_model
 from timm.utils import AverageMeter, setup_default_logging, set_jit_fuser, ParseKwargs
+import onnx
+import onnxruntime as ort
 
 try:
     from apex import amp
@@ -69,7 +71,7 @@ parser.add_argument('--model', '-m', metavar='MODEL', default='maxvit_rmlp_base_
                     help='model architecture (default: resnet50)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 2)')
-parser.add_argument('-b', '--batch-size', default=2, type=int,
+parser.add_argument('-b', '--batch-size', default=1, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--img-size', default=None, type=int,
                     metavar='N', help='Input image dimension, uses model default if empty')
@@ -194,6 +196,9 @@ def main():
         checkpoint_path=args.checkpoint,
         **args.model_kwargs,
     )
+
+    ort_session = ort.InferenceSession('maxvit_rmlp_base_rw_384.onnx', providers=['CUDAExecutionProvider'])
+    
     if args.num_classes is None:
         assert hasattr(model, 'num_classes'), 'Model must have `num_classes` attr if not set on cmd line/config.'
         args.num_classes = model.num_classes
@@ -271,7 +276,9 @@ def main():
 
             with amp_autocast():
                 output = model(input)
-
+            ort_img_cpu = input.cpu()
+            ort_img_np = np.around(ort_img_cpu.numpy(), 4)
+            outputs = ort_session.run(None, {'img': ort_img_np})
             if use_probs:
                 output = output.softmax(-1)
 
